@@ -1,5 +1,5 @@
 ---
-title: "Chifoumi — Grehack 2025"
+title: "Chifoumi - Grehack 2025"
 date: 2025-11-29
 tags: ["pwn", "grehack", "ret2libc"]
 ---
@@ -11,8 +11,9 @@ a vulnerable password prompt.
 
 ## Introduction
 
-This challenge is a small game where you must beat a bot multiple times to reach a password prompt.
-The password input is vulnerable to a stack-based buffer overflow, which allows code execution.
+This challenge was solved while participating to an annual cyber security event done in Grenoble ⛰️ in France 🇫🇷.
+
+The password input of this challenge is vulnerable to a stack-based buffer overflow, which allows code execution.
 
 The difficulty is not the overflow itself, but reliably **winning the game**, since the bot’s moves are generated using `rand()`.
 
