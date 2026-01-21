@@ -1,0 +1,39 @@
+<!doctype html>
+<title>{% block title %}{% endblock %} - Netflute</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<nav>
+  <h1 class="logo"><a href="/">Netflute</a></h1>
+  <ul>
+    {% if g.user %}
+      <li><a href="/forum">Forum</a>
+      <li><a href="/profile">Profil</a>
+      <li><a href="/logout">Déconnexion</a>
+    {% else %}
+      <li><a href="/register">Inscription</a>
+      <li><a href="/login">Connexion</a>
+    {% endif %}
+  </ul>
+</nav>
+<section class="content">
+  <header>
+    {% block header %}{% endblock %}
+  </header>
+  <div class="flash-container">
+  {% for message in get_flashed_messages(with_categories=true) %}
+        <div class="alert alert-{{ message[0] }} flash-message">{{ message[1] }}</div>
+      {% endfor %}
+    </div>
+  {% block content %}{% endblock %}
+</section>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      const flashMessages = document.querySelectorAll('.flash-message');
+      flashMessages.forEach(function(message) {
+          setTimeout(function() {
+              message.style.transition = 'opacity 0.5s';
+              message.style.opacity = '0';
+              setTimeout(() => message.remove(), 500);
+          }, 3000);
+      });
+  });
+</script>

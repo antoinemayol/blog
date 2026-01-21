@@ -1,0 +1,26 @@
+services:
+  flask_app:
+    container_name: flask_app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./app:/app # ici ca mount le ./app --> peut poser des probleme de secu -->  metter apres dev - /app/app
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_URL=postgresql://postgres:postgres@flask_db:5432/postgres
+    depends_on:
+      - flask_db
+
+  flask_db:
+    container_name: flask_db
+    image: postgres:12
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+    volumes:
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql

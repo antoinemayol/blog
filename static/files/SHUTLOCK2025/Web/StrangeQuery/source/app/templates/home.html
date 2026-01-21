@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Accueil{% endblock %}
+
+{% block header %}
+  <h1 class="welcome-heading">Bienvenue sur Netflute!</h1>
+{% endblock %}
+
+{% block content %}
+<div class="home-container">
+  <section class="intro-section">
+    <h2>Découvrir, Discuter et Partager</h2>
+    <p>
+      Netflute est votre plateforme incontournable pour tout ce qui concerne le cinéma. Que vous soyez un spectateur occasionnel ou un passionné de films,
+      nous réunissons une communauté de personnes passionnées pour explorer et discuter de vos films préférés.
+    </p>
+    <p>
+      Partagez vos avis, découvrez des pépites cachées et rejoignez la conversation sur les derniers blockbusters
+      et les classiques intemporels.
+    </p>
+  </section>
+
+  <section class="features-section">
+    <h2>Pourquoi rejoindre Netflute ?</h2>
+    <ul>
+      <li>🎥 <strong>Explorer les films :</strong> Découvrez des films nouveaux et tendance, lisez les critiques des utilisateurs et ajoutez vos propres recommandations.</li>
+      <li>💬 <strong>Échangez avec la communauté :</strong> Discutez de vos films préférés et participez à des forums animés.</li>
+      <li>✨ <strong>Créez & Partagez :</strong> Partagez vos critiques, ajoutez des films et faites découvrir vos trouvailles aux autres.</li>
+    </ul>
+  </section>
+
+  <section class="cta-section">
+    <h2>Rejoignez-nous dès aujourd'hui!</h2>
+    {% if not g.user %}
+      <p><a href="/register" class="button-link">Créer un compte</a> ou <a href="/login" class="button-link">Se connecter</a> pour commencer votre aventure.</p>
+    {% else %}
+      <p>Bon retour, {{ g.user.username }} ! Prêt à découvrir plus de films ?</p>
+      <p><a href="/forum" class="button-link">Visitez le forum</a></p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

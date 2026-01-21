@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Forum{% endblock %}
+
+{% block header %}
+  <h1>Films</h1>
+{% endblock %}
+
+{% block content %}
+  {% for movie in movies %}
+    <div class="movie-card">
+      <a href="{{ url_for('movie', movie_id=movie.id) }}">
+        <img src="{{ movie.image_link}}" alt="{{ movie.title }}" class="movie-poster">
+      </a>
+      <div class="movie-details">
+        <h3><a href="{{ url_for('movie', movie_id=movie.id) }}">{{ movie.title }}</a></h3>
+        <p>{{ movie.content[:200] }}...</p>
+        <p class="movie-meta">Publié le {{ movie.created_at.strftime("%Y-%m-%d") }}.</p>
+      </div>
+    </div>
+  {% else %}
+    <p>Aucun film disponible..</p>
+  {% endfor %}
+  {% if g.user %}
+    <a href="/movies/addMovie" class="button-link">Ajouter un film</a>
+  {% else %}
+    <p>Vous devez vous <a href="/login">connecter</a> pour créer ajouter un film.</p>
+  {% endif %}
+{% endblock %}

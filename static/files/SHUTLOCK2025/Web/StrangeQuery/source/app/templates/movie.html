@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ movie.title }}{% endblock %}
+
+{% block header %}
+  <h1>{{ movie.title }}</h1>
+{% endblock %}
+
+{% block content %}
+  <div class="movie-container">
+    <img src="{{ movie.image_link}}" alt="{{ movie.title }}" class="movie-image">
+    <div class="movie-details">
+      <p>{{ movie.content }}</p>
+      <p>Publié le {{ movie.created_at.strftime("%Y-%m-%d") }}.</p>
+    </div>
+  </div>
+
+  <h3>Commentaires</h3>
+  {% if g.user %}
+    <form method="post">
+      <textarea name="content" required></textarea>
+      <input type="submit" value="Add Comment">
+    </form>
+  {% else %}
+    <p>Vous devez vous <a href="/login">connecter</a> pour commenter.</p>
+  {% endif %}
+
+  {% for comment in comments %}
+  <div class="comment comment-bubble">
+      <p>{{ comment.content | linkify_tags | safe }}</p>
+    <p><small>Commentaire de <a href="/profile/{{comment.user.id}}" class="profile-link">{{ comment.user.username }}{% if comment.user.pronouns %} . ({{ comment.user.pronouns }}){% endif %}</a> du {{ comment.created_at.strftime("%Y-%m-%d %H:%M") }}.</small></p>
+  </div>
+  {% else %}
+    <p>Pas de commentaire pour l'instant...</p>
+  {% endfor %}
+{% endblock %}

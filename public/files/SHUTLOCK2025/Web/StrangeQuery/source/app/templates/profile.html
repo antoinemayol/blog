@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile{% endblock %}
+
+{% block header %}
+<section class="content">
+    <h1 class="welcome-heading">{{ user.username }}'s Profile</h1>
+    {% if user.verified %}
+    <h4 class="text-success">✔ Verifié</h4>
+    {% else %}
+    <h4 class="text-danger">✖ Non Verifié</h4>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block content %}
+<section class="profile-form-container">
+    <h2 class="text-center">Information de l'utilisateur</h2>
+    <div class="form-group">
+        <label for="email"><strong>Email:</strong></label>
+        <p>{{ user.email }}</p>
+    </div>
+    <div class="form-group">
+        <label for="pronouns"><strong>Pronoms:</strong></label>
+        <p>{{ user.pronouns | default("Not specified") }}</p>
+    </div>
+
+    {% if not user.verified %}
+    <form method="post" action="/profile/{{ user.id }}">
+        <input type="submit" value="Verify Account" class="btn-submit">
+    </form>
+    {% else %}
+    <p class="text-center text-muted">Ce compte est déjà vérifé.</p>
+    {% endif %}
+</section>
+{% endblock %}
