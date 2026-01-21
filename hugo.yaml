@@ -1,0 +1,21 @@
+baseURL: "https://antoinemayol.github.io/blog/"
+languageCode: "en-us"
+title: "cyber-notes"
+theme: "PaperMod"
+
+params:
+  ShowReadingTime: true
+  ShowCodeCopyButtons: true
+  ShowBreadCrumbs: true
+
+menu:
+  main:
+    - name: Writeups
+      url: /writeups/
+      weight: 10
+    - name: Challenges
+      url: /challenges/
+      weight: 20
+    - name: Research
+      url: /research/
+      weight: 30
