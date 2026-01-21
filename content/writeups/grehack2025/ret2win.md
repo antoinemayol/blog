@@ -3,7 +3,7 @@ title: "Ret2win - Grehack 2025"
 date: 2025-11-29
 tags: ["pwn"]
 categories: ["Writeups"]
-image: /images/grehack2025.png
+image: /blog/images/grehack2025.png
 hidden: true
 description: "This challenge is a simple blind ret2win."
 ---

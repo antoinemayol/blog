@@ -3,7 +3,7 @@ title: "Chifoumi - Grehack 2025"
 date: 2025-11-29
 tags: ["pwn"]
 categories: ["Writeups"]
-image: /images/grehack2025.png
+image: /blog/images/grehack2025.png
 description: "This challenge is a small game where you must beat a bot multiple times to reach a vulnerable password prompt."
 ---
 

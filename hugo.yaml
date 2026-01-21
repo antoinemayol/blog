@@ -1,4 +1,4 @@
-baseURL: "https://localhost:1313/"
+baseURL: "https://antoinemayol.github.io/blog/"
 languageCode: "en-us"
 title: "Antoine Mayol"
 
@@ -22,7 +22,7 @@ params:
     avatar:
       enabled: true
       local: false
-      src: "/images/profil_picture.png"
+      src: "/blog/images/profil_picture.png"
 
   article:
     math: false
