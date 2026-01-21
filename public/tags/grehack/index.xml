@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>Grehack on Antoine Mayol</title>
+        <link>http://localhost:1313/tags/grehack/</link>
+        <description>Recent content in Grehack on Antoine Mayol</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>en-us</language>
+        <lastBuildDate>Sat, 29 Nov 2025 00:00:00 +0000</lastBuildDate><atom:link href="http://localhost:1313/tags/grehack/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>Chifoumi - Grehack 2025</title>
+        <link>http://localhost:1313/writeups/grehack2025/chifoumi/</link>
+        <pubDate>Sat, 29 Nov 2025 00:00:00 +0000</pubDate>
+        
+        <guid>http://localhost:1313/writeups/grehack2025/chifoumi/</guid>
+        <description>&lt;p&gt;This challenge is a small game where you must beat a bot multiple times to reach
+a vulnerable password prompt.&lt;/p&gt;
+&lt;h2 id=&#34;introduction&#34;&gt;Introduction
+&lt;/h2&gt;&lt;p&gt;This challenge was solved while participating to an annual cyber security event done in Grenoble ⛰️ in France 🇫🇷.&lt;/p&gt;
+&lt;p&gt;The password input of this challenge is vulnerable to a stack-based buffer overflow, which allows code execution.&lt;/p&gt;
+&lt;p&gt;The difficulty is not the overflow itself, but reliably &lt;strong&gt;winning the game&lt;/strong&gt;, since the bot’s moves are generated using &lt;code&gt;rand()&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;We are given:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;game_patched&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;libc.so.6&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;ld-linux-x86-64.so.2&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;You can download those files &lt;a class=&#34;link&#34; href=&#34;http://localhost:1313/blog/files/grehack2025/Chifoumi/challpwn.tar.gz&#34; &gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;game-logic&#34;&gt;Game Logic
+&lt;/h2&gt;&lt;p&gt;Each round, the bot chooses its move with:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;bot_move &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;rand&lt;/span&gt;() &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;3&lt;/span&gt;;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;If we win 31 rounds, the program prints:&lt;/p&gt;
+&lt;p&gt;Password :&lt;/p&gt;
+&lt;p&gt;The winning move is simply:&lt;/p&gt;
+&lt;p&gt;(my_move = (bot_move + 1) % 3)&lt;/p&gt;
+&lt;p&gt;So if we can predict rand(), we win every round.
+Predicting the Bot (PRNG Abuse)
+Leaking the Seed&lt;/p&gt;
+&lt;p&gt;The menu has an option that prints logs. Inside those logs, a value called token is printed:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;token: &amp;lt;number&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;This value is used to seed the PRNG.&lt;/p&gt;
+&lt;p&gt;By selecting the log option and parsing the output, we can recover the exact seed.
+Reproducing rand() Locally&lt;/p&gt;
+&lt;p&gt;The binary uses glibc’s rand().
+We can reproduce the exact same random sequence locally using ctypes:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;libc2 = ctypes.CDLL(&amp;#34;libc.so.6&amp;#34;)
+libc2.srand(seed)
+libc2.rand()  # sync
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;After that, every call to libc2.rand() matches the bot’s moves.
+Auto-Winning the Game&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;for i in range(31):
+    bot_move = libc2.rand() % 3
+    my_move = (bot_move + 1) % 3
+    send(my_move)
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;This reliably brings us to the password prompt.&lt;/p&gt;
+&lt;h3 id=&#34;buffer-overflow&#34;&gt;Buffer Overflow
+&lt;/h3&gt;&lt;p&gt;The password is read into a fixed-size stack buffer without bounds checking.&lt;/p&gt;
+&lt;p&gt;By sending 200+ bytes, we overwrite the saved return address and gain control of execution.&lt;/p&gt;
+&lt;p&gt;However, ASLR is enabled, so we need a libc leak first.&lt;/p&gt;
+&lt;h3 id=&#34;stage-1--leaking-libc&#34;&gt;Stage 1 – Leaking libc
+&lt;/h3&gt;&lt;p&gt;We build a small ROP chain to call puts on its own GOT entry:&lt;/p&gt;
+&lt;p&gt;puts(puts@GOT)
+return to main&lt;/p&gt;
+&lt;p&gt;This leaks the runtime address of puts.&lt;/p&gt;
+&lt;p&gt;From that, we compute the libc base:&lt;/p&gt;
+&lt;p&gt;libc_base = leaked_puts - libc.symbols[&amp;ldquo;puts&amp;rdquo;]&lt;/p&gt;
+&lt;h3 id=&#34;stage-2--getting-back-to-the-password&#34;&gt;Stage 2 – Getting Back to the Password
+&lt;/h3&gt;&lt;p&gt;After leaking libc, the program returns to the menu.
+The PRNG seed changes, so we simply:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Read logs again&lt;/li&gt;
+&lt;li&gt;Extract the new seed&lt;/li&gt;
+&lt;li&gt;Re-sync rand()&lt;/li&gt;
+&lt;li&gt;Win the game again&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Now we reach the password prompt with libc fully resolved.&lt;/p&gt;
+&lt;h3 id=&#34;stage-3--ret2libc&#34;&gt;Stage 3 – ret2libc
+&lt;/h3&gt;&lt;p&gt;With the libc base known, we prepare the final payload:&lt;/p&gt;
+&lt;p&gt;[pop rdi] [/bin/sh] [system]&lt;/p&gt;
+&lt;p&gt;A single ret gadget is added before pop rdi to keep the stack 16-byte aligned.&lt;/p&gt;
+&lt;p&gt;This results in:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;system(&amp;#34;/bin/sh&amp;#34;);
+&lt;/code&gt;&lt;/pre&gt;&lt;h2 id=&#34;result&#34;&gt;Result
+&lt;/h2&gt;&lt;p&gt;We get a shell and can read the flag:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;$ cat flag
+flag{...}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;You can look at the &lt;a class=&#34;link&#34; href=&#34;http://localhost:1313/blog/files/grehack2025/Chifoumi/solve.py&#34; &gt;solve.py&lt;/a&gt;.&lt;/p&gt;</description>
+        </item>
+        <item>
+        <title>Ret2win - Grehack 2025</title>
+        <link>http://localhost:1313/writeups/grehack2025/ret2win/</link>
+        <pubDate>Sat, 29 Nov 2025 00:00:00 +0000</pubDate>
+        
+        <guid>http://localhost:1313/writeups/grehack2025/ret2win/</guid>
+        <description>&lt;p&gt;This challenge is a simple blind ret2win.&lt;/p&gt;
+&lt;h2 id=&#34;introduction&#34;&gt;Introduction
+&lt;/h2&gt;&lt;p&gt;This challenge was solved while participating to an annual cyber security event done in Grenoble ⛰️ in France 🇫🇷.&lt;/p&gt;
+&lt;h2 id=&#34;solving&#34;&gt;Solving
+&lt;/h2&gt;&lt;p&gt;First it was necessary to find the right offset that seem to crash the program.&lt;/p&gt;
+&lt;p&gt;Once find, the offset can be used to spray the return address and find an interesting address.&lt;/p&gt;
+&lt;p&gt;Here is the &lt;a class=&#34;link&#34; href=&#34;http://localhost:1313/blog/files/grehack2025/ret2win/solve.py&#34; &gt;script&lt;/a&gt; that solved it.&lt;/p&gt;</description>
+        </item>
+        
+    </channel>
+</rss>

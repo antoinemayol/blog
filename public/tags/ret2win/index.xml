@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>Ret2win on Antoine Mayol</title>
+        <link>http://localhost:1313/tags/ret2win/</link>
+        <description>Recent content in Ret2win on Antoine Mayol</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>en-us</language>
+        <lastBuildDate>Sat, 29 Nov 2025 00:00:00 +0000</lastBuildDate><atom:link href="http://localhost:1313/tags/ret2win/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>Ret2win - Grehack 2025</title>
+        <link>http://localhost:1313/writeups/grehack2025/ret2win/</link>
+        <pubDate>Sat, 29 Nov 2025 00:00:00 +0000</pubDate>
+        
+        <guid>http://localhost:1313/writeups/grehack2025/ret2win/</guid>
+        <description>&lt;p&gt;This challenge is a simple blind ret2win.&lt;/p&gt;
+&lt;h2 id=&#34;introduction&#34;&gt;Introduction
+&lt;/h2&gt;&lt;p&gt;This challenge was solved while participating to an annual cyber security event done in Grenoble ⛰️ in France 🇫🇷.&lt;/p&gt;
+&lt;h2 id=&#34;solving&#34;&gt;Solving
+&lt;/h2&gt;&lt;p&gt;First it was necessary to find the right offset that seem to crash the program.&lt;/p&gt;
+&lt;p&gt;Once find, the offset can be used to spray the return address and find an interesting address.&lt;/p&gt;
+&lt;p&gt;Here is the &lt;a class=&#34;link&#34; href=&#34;http://localhost:1313/blog/files/grehack2025/ret2win/solve.py&#34; &gt;script&lt;/a&gt; that solved it.&lt;/p&gt;</description>
+        </item>
+        
+    </channel>
+</rss>

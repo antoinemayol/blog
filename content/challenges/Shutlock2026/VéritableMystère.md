@@ -1,13 +1,10 @@
 ---
 title: "VéritableMystère - Shutlock 2025"
 date: 2025-06-30
-tags: ["reverse", "shutlock", "vm"]
+categories: ["Challenges"]
+description: "This is a reverse engineering challenge built around a heavily obfuscated Python script. Hidden inside is a compressed bytecode executed by a custom virtual machine (VM) that validates a secret input."
+tags: ["reverse"]
 ---
-
-This is a reverse engineering challenge built around a heavily obfuscated Python script.
-Hidden inside is a compressed bytecode executed by a custom **virtual machine (VM)** that validates a secret input.
-
-<!--more-->
 
 ## Introduction
 

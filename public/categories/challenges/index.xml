@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>Challenges on Antoine Mayol</title>
+        <link>http://localhost:1313/categories/challenges/</link>
+        <description>Recent content in Challenges on Antoine Mayol</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>en-us</language>
+        <lastBuildDate>Mon, 30 Jun 2025 00:00:00 +0000</lastBuildDate><atom:link href="http://localhost:1313/categories/challenges/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>StrangeQuery - Shutlock 2025</title>
+        <link>http://localhost:1313/challenges/shutlock2026/strangequery/</link>
+        <pubDate>Mon, 30 Jun 2025 00:00:00 +0000</pubDate>
+        
+        <guid>http://localhost:1313/challenges/shutlock2026/strangequery/</guid>
+        <description>&lt;h2 id=&#34;introduction&#34;&gt;Introduction
+&lt;/h2&gt;&lt;p&gt;I created this challenge for a school CTF project 📚.
+The goal is to exploit multiple vulnerabilities chained together to extract secrets from the database.&lt;/p&gt;
+&lt;h2 id=&#34;main-techniques&#34;&gt;Main Techniques
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Privilege Escalation via Cookies&lt;/strong&gt;: a client-side cookie controls access to admin-only features.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Logic Flaw Abuse&lt;/strong&gt;: user verification can be triggered without proper authorization.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Second-Order Blind SQL Injection&lt;/strong&gt;: malicious input is stored first, then executed later in a different context.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Automated Exploitation&lt;/strong&gt;: the injection can be exploited using tools like &lt;code&gt;sqlmap&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;your-turn&#34;&gt;Your turn
+&lt;/h2&gt;&lt;p&gt;To try this challenge, download the &lt;a class=&#34;link&#34; href=&#34;http://localhost:1313/blog/files/Shutlock2025/Web/StrangeQuery/StrangeQuery.zip&#34; &gt;given files&lt;/a&gt; and run the application locally.&lt;/p&gt;
+&lt;p&gt;Go in the directory source, and run &lt;code&gt;docker compose up&lt;/code&gt;, once done the website will be available at &lt;code&gt;http://localhost:5000/&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;If you get stuck, a full writeup is available in &lt;code&gt;solution/Solution.md&lt;/code&gt;.
+PS: It’s written in French 🤓&lt;/p&gt;
+</description>
+        </item>
+        <item>
+        <title>VéritableMystère - Shutlock 2025</title>
+        <link>http://localhost:1313/challenges/shutlock2026/v%C3%A9ritablemyst%C3%A8re/</link>
+        <pubDate>Mon, 30 Jun 2025 00:00:00 +0000</pubDate>
+        
+        <guid>http://localhost:1313/challenges/shutlock2026/v%C3%A9ritablemyst%C3%A8re/</guid>
+        <description>&lt;h2 id=&#34;introduction&#34;&gt;Introduction
+&lt;/h2&gt;&lt;p&gt;I did this challenge for a school CTF project 📚. The goal of this challenge is to understand the VM and recover the flag.&lt;/p&gt;
+&lt;h2 id=&#34;main-technique&#34;&gt;Main Technique
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Decompression&lt;/strong&gt;: the real logic is hidden using &lt;strong&gt;bzip2&lt;/strong&gt; compression.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Deobfuscation&lt;/strong&gt;: variable names and structure are intentionally scrambled.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;VM Reverse Engineering&lt;/strong&gt;: the script implements its own instruction set, registers, and execution loop.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Bytecode Analysis&lt;/strong&gt;: reconstruct the instructions and translate them into readable pseudo-code.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;your-turn&#34;&gt;Your turn
+&lt;/h2&gt;&lt;p&gt;To try this challenge download the &lt;a class=&#34;link&#34; href=&#34;http://localhost:1313/blog/files/Shutlock2025/Reverse/V%c3%a9ritableMyst%c3%a8re/V%c3%a9ritableMyst%c3%a8re.zip&#34; &gt;given files&lt;/a&gt;, and start the challenge with the file &lt;code&gt;source/VéritableMystère.py&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;If at any point you are stuck, feel free to look at the writeup at &lt;code&gt;solution/Solution.md&lt;/code&gt;.
+PS: It&amp;rsquo;s written in French 🤓&lt;/p&gt;
+</description>
+        </item>
+        
+    </channel>
+</rss>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>Reverse on Antoine Mayol</title>
+        <link>http://localhost:1313/tags/reverse/</link>
+        <description>Recent content in Reverse on Antoine Mayol</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>en-us</language>
+        <lastBuildDate>Mon, 30 Jun 2025 00:00:00 +0000</lastBuildDate><atom:link href="http://localhost:1313/tags/reverse/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>VéritableMystère - Shutlock 2025</title>
+        <link>http://localhost:1313/challenges/shutlock2026/v%C3%A9ritablemyst%C3%A8re/</link>
+        <pubDate>Mon, 30 Jun 2025 00:00:00 +0000</pubDate>
+        
+        <guid>http://localhost:1313/challenges/shutlock2026/v%C3%A9ritablemyst%C3%A8re/</guid>
+        <description>&lt;h2 id=&#34;introduction&#34;&gt;Introduction
+&lt;/h2&gt;&lt;p&gt;I did this challenge for a school CTF project 📚. The goal of this challenge is to understand the VM and recover the flag.&lt;/p&gt;
+&lt;h2 id=&#34;main-technique&#34;&gt;Main Technique
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Decompression&lt;/strong&gt;: the real logic is hidden using &lt;strong&gt;bzip2&lt;/strong&gt; compression.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Deobfuscation&lt;/strong&gt;: variable names and structure are intentionally scrambled.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;VM Reverse Engineering&lt;/strong&gt;: the script implements its own instruction set, registers, and execution loop.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Bytecode Analysis&lt;/strong&gt;: reconstruct the instructions and translate them into readable pseudo-code.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;your-turn&#34;&gt;Your turn
+&lt;/h2&gt;&lt;p&gt;To try this challenge download the &lt;a class=&#34;link&#34; href=&#34;http://localhost:1313/blog/files/Shutlock2025/Reverse/V%c3%a9ritableMyst%c3%a8re/V%c3%a9ritableMyst%c3%a8re.zip&#34; &gt;given files&lt;/a&gt;, and start the challenge with the file &lt;code&gt;source/VéritableMystère.py&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;If at any point you are stuck, feel free to look at the writeup at &lt;code&gt;solution/Solution.md&lt;/code&gt;.
+PS: It&amp;rsquo;s written in French 🤓&lt;/p&gt;
+</description>
+        </item>
+        
+    </channel>
+</rss>

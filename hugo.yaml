@@ -1,21 +1,96 @@
-baseURL: "https://antoinemayol.github.io/blog/"
+baseURL: "https://localhost:1313/"
 languageCode: "en-us"
 title: "Antoine Mayol"
-theme: "PaperMod"
+
+theme: "stack"
+
+pagination:
+  pagerSize: 10
+
+taxonomies:
+  category: categories
+  tag: tags
 
 params:
-  ShowReadingTime: true
-  ShowCodeCopyButtons: true
-  ShowBreadCrumbs: true
+  mainSections:
+    - writeups
+    - challenges
+    - research
+
+  sidebar:
+    subtitle: "Cyber security student - CTF enjoyer"
+    avatar:
+      enabled: true
+      local: false
+      src: "/images/profil_picture.png"
+
+  article:
+    math: false
+    toc: true
+    readingTime: true
+
+  footer:
+    since: 2025
+    customText: "Cybersecurity · CTF · Research"
+
+  widgets:
+    homepage:
+      - type: search
+      - type: categories
+        params:
+          limit: 20
+      - type: tag-cloud
+        params:
+          limit: 30
+      - type: archives
+        params:
+          limit: 10
+    page:
+      - type: toc
+      - type: search
+      - type: categories
+      - type: tag-cloud
 
 menu:
   main:
-    - name: Writeups
-      url: /writeups/
+    - identifier: home
+      name: Home
+      url: /
       weight: 10
-    - name: Challenges
-      url: /challenges/
+      params:
+        icon: home
+
+    - identifier: categories
+      name: Categories
+      url: /categories/
       weight: 20
-    - name: Research
-      url: /research/
+      params:
+        icon: categories
+
+    - identifier: tags
+      name: Tags
+      url: /tags/
       weight: 30
+      params:
+        icon: tag
+
+    - identifier: archives
+      name: Archives
+      url: /archives/
+      weight: 40
+      params:
+        icon: archives
+
+
+social:
+  - identifier: github
+    name: GitHub
+    url: "https://github.com/antoinemayol"
+
+  - identifier: linkedin
+    name: LinkedIn
+    url: "https://www.linkedin.com/in/antoinemayol/"
+
+  - identifier: email
+    name: Email
+    url: "mailto:antoine.mayol@yahoo.com"

@@ -1,13 +1,10 @@
 ---
 title: "Smollm - Hack.lu 2025"
 date: 2025-10-24
-tags: ["pwn", "hacklu", "ret2libc"]
+categories: ["Writeups"]
+description: "This challenge abuses a leaked PRNG seed to perfectly predict the bot’s rand()-based moves, allowing guaranteed access to a vulnerable password prompt. The exploit uses a stack buffer overflow with a two-stage ret2libc attack: first leaking a libc address with ROP, then calling system('/bin/sh') to get a shell."
+tags: ["pwn"]
 ---
-
-This challenge abuses a leaked PRNG seed to perfectly predict the bot’s rand()-based moves, allowing guaranteed access to a vulnerable password prompt.
-The exploit uses a stack buffer overflow with a two-stage ret2libc attack: first leaking a libc address with ROP, then calling system("/bin/sh") to get a shell.
-
-<!--more-->
 
 ## Introduction
 

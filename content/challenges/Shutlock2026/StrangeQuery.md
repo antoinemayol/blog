@@ -1,13 +1,10 @@
 ---
 title: "StrangeQuery - Shutlock 2025"
 date: 2025-06-30
-tags: ["web", "shutlock", "sqli"]
+tags: ["web"]
+categories: ["Challenges"]
+description: "This is a web security challenge targeting a movie platform called Netflute. It combines a logic flaw with a subtle database vulnerability to ultimately leak sensitive data using SQLI 2nd order."
 ---
-
-This is a web security challenge targeting a movie platform called **Netflute**.
-It combines a logic flaw with a subtle database vulnerability to ultimately leak sensitive data using **SQLI 2nd order**.
-
-<!--more-->
 
 ## Introduction
 
