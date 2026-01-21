@@ -1,6 +1,6 @@
 baseURL: "https://antoinemayol.github.io/blog/"
 languageCode: "en-us"
-title: "cyber-notes"
+title: "Antoine Mayol"
 theme: "PaperMod"
 
 params:

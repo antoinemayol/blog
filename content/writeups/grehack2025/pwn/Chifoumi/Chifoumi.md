@@ -12,7 +12,7 @@ We are given:
 - `libc.so.6`
 - `ld-linux-x86-64.so.2`
 
-You can download those files [here](/files/grehack2025/Chifoumi/challpwn.tar.gz).
+You can download those files [here](/blog/files/grehack2025/Chifoumi/challpwn.tar.gz).
 
 ---
 
@@ -123,4 +123,4 @@ $ cat flag
 flag{...}
 ```
 
-You can look at the [solve.py](/files/grehack2025/Chifoumi/solve.py).
+You can look at the [solve.py](/blog/files/grehack2025/Chifoumi/solve.py).
