@@ -14,7 +14,9 @@ Do you want to
 >
 ```
 
-The source code I provided, and here is the sec that seemed to be present on the binary.
+The source code is provided, you can find it [here](/files/hack.lu-2025/smollm/SMOLLM.py).
+
+And here is the sec that seemed to be present on the binary.
 
 ```bash
 $ checksec smollm
@@ -210,4 +212,4 @@ $ cat flag
 flag{w3_4re_ou7_0f_7ok3n5,sorry:171cec579a6ccf7ab7eba1b8cd2ee12c}
 ```
 
-Feel free to read my script, even if its a bit messy Xd.
+Feel free to read my [script](/files/hack.lu-2025/smollm/solve.py), even if its a bit messy Xd.
