@@ -1,4 +1,4 @@
-# Game – Hack.lu 2025
+# Chifoumi  - Grehack2025
 
 ## Introduction
 
@@ -11,6 +11,8 @@ We are given:
 - `game_patched`
 - `libc.so.6`
 - `ld-linux-x86-64.so.2`
+
+You can download those files [here](/files/grehack2025/Chifoumi/challpwn.tar.gz).
 
 ---
 
@@ -120,3 +122,5 @@ We get a shell and can read the flag:
 $ cat flag
 flag{...}
 ```
+
+You can look at the [solve.py](/files/grehack2025/Chifoumi/solve.py).
