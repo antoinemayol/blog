@@ -1,4 +1,12 @@
-# Ret2win - Grehack2025
+---
+title: "Ret2win — Grehack 2025"
+date: 2025-11-29
+tags: ["pwn", "grehack", "ret2win", "blind"]
+---
+
+This challenge was a simple blinf re2win
+
+<!--more-->
 
 ## Introduction
 
