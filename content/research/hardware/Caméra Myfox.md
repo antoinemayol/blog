@@ -1,6 +1,6 @@
 ---
 title: "Caméra Myfox"
-date: 2025-11-29
+date: 2026-04-26
 tags: ["hardware"]
 categories: ["Research"]
 description: "Rétro-ingénierie d'une vieille caméra myfox.  "
@@ -8,15 +8,16 @@ description: "Rétro-ingénierie d'une vieille caméra myfox.  "
 
 ## Introduction
 
-J'ai trouvé une vieille caméra dans le garage de mon père. Et comme je n'avais jamais vraiment fait de hardware, j'ai trouvé que c'était une bonne idée d'y jeter un coup d'œil.
+J'ai trouvé une vieille caméra dans le garage de mon père. Cette caméra n'a apparamment jamais fonctionnée et comme je n'avais jamais vraiment fait de hardware, c'était la target parfaite.
 
-## Boot
+## Analyse du Boot et Accès UART
 
 Après avoir enlevé le couvercle de la caméra, grâce au blog post [suivant](https://arthur.lutz.im/blog/2020/04/13/demontage-myfox-security-camera-part-2/), on peut accéder au PCB et on voit les pins RX et TX.
 
 ![Photo du hardware](/blog/images/myfox1.png)
 
-Ceux-ci sont difficilement soudables, il faut donc utiliser un setup un peu louche pour pouvoir se connecter en UART à la device.
+Ceux-ci sont difficilement soudables, il faut donc utiliser un setup un peu louche pour pouvoir se connecter en UART à la device. Des pinces à linges, du scotch et des fils souples font l'affaire.
+
 ![Photo de l'installation UART](/blog/images/myfox2.png)
 
 Une fois bien branché, on voit les logs de boot du kernel et on obtient un prompt d'authentification.
@@ -42,10 +43,12 @@ On peut changer le recovery mode path et obtenir un shell en recovery mode.
 setenv cmdline console=ttyS0 ubi.mtd=lnx root=ubi0:rootfs rw rootfstype=ubifs rdinit=/bin/sh lpj=2392064 snd_soc_core.pmdown_time=500
 ```
 
+Cela me permets de modifies les arguments de boot pour forcer le noyau à lancer un shell.
+
 On peut ensuite changer le mot de passe root.
 On reboot, et on obtient un shell.
 
-## Processes
+## Analyse du Système et Persistance
 
 En regardant les process lancés au démarrage, la liste de processus suivante semble lancer un binaire `qrcode`.
 
@@ -82,6 +85,8 @@ Puis notre device est connectée au wifi:
     link/ether b0:41:1d:02:c7:5f brd ff:ff:ff:ff:ff:ff
     inet 192.168.1.115/24 brd 192.168.1.255 scope global wlan0
 ```
+
+## Accès persistant
 
 Maintenant plus besoin de shell via UART. On installe une crontab qui lance un reverse shell vers une autre machine et c'est bon.
 
@@ -137,7 +142,7 @@ Process has exit!
 
 ```
 
-En effet l'entreprise à été rachetée depuis et le produit à été refondue.
+En effet l'entreprise a été rachetée depuis et le produit à été refondu.
 
 Le fichier de conf suivant est utilisé notamment pour faire des mises à jour.
 
@@ -167,7 +172,7 @@ Au final on ne peut pas aller plus loin dans la recherche...
 
 J'ai commencé à reverse le soft, mais comme les serveurs sont down ça n'a pas grand intérêt.
 
-La partie 2 du post pourrait être un projet pour rendre à nouveau fonctionnel cette caméra ?
+Même si les serveurs originaux sont morts, la caméra est maintenant une Linux box ouverte. Prochaine étape : détourner le flux vidéo vers un serveur RTSP local.
 
 ---
 
