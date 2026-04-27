@@ -75,7 +75,7 @@ root       323  0.0  0.4   3560   644 ?        S    16:50   0:00  \_ /bin/sh /us
 root       332  4.2  6.6 168996  8984 ?        Sl   16:50   0:11      \_ /usr/local/LeCam/bin/LeCam start
 root      1427  0.0  0.4   3560   636 ?        S    16:54   0:00          \_ sh -c /usr/local/LeCam/bin//wifi_stream.sh managed Livebox\-A190 N5pYGqA2EwTLFmNZa5 >/dev/null 2>&1; echo $?
 root      1430  0.1  0.5   3560   724 ?        S    16:54   0:00              \_ /bin/sh /usr/local/LeCam/bin//wifi_stream.sh managed Livebox-A190 N5pYGqA2EwTLFmNZa5
-root      1441  5.5  3.0  13308  4044 ?        S<   16:54   0:01                  \_ test_network_manager Livebox-A190 N5pYGqA2EwTLFmNZa5
+root      1441  5.5  3.0  13308  4044 ?        S<   16:54   0:01                  \_ test_network_manager Box_internet mot_de_passe
 
 ```
 
