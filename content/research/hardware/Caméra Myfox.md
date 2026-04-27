@@ -73,7 +73,7 @@ Une fois le qrcode scanné on obtient l'arbre suivant:
 root       312  0.0  0.5   3560   672 ?        S    16:50   0:00 /bin/sh /usr/local/LeCam/bin/watchdog.sh LeCam
 root       323  0.0  0.4   3560   644 ?        S    16:50   0:00  \_ /bin/sh /usr/local/LeCam/bin/start.sh
 root       332  4.2  6.6 168996  8984 ?        Sl   16:50   0:11      \_ /usr/local/LeCam/bin/LeCam start
-root      1427  0.0  0.4   3560   636 ?        S    16:54   0:00          \_ sh -c /usr/local/LeCam/bin//wifi_stream.sh managed Livebox\-A190 N5pYGqA2EwTLFmNZa5 >/dev/null 2>&1; echo $?
+root      1427  0.0  0.4   3560   636 ?        S    16:54   0:00          \_ sh -c /usr/local/LeCam/bin//wifi_stream.sh managed Box_internet mot_de_passe >/dev/null 2>&1; echo $?
 root      1430  0.1  0.5   3560   724 ?        S    16:54   0:00              \_ /bin/sh /usr/local/LeCam/bin//wifi_stream.sh managed Box_internet mot_de_passe
 root      1441  5.5  3.0  13308  4044 ?        S<   16:54   0:01                  \_ test_network_manager Box_internet mot_de_passe
 
